@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#07162b">
+  <meta name="description" content="TrustPostcode — reliable Nigerian postcode verification for digital businesses.">
+  <title>TrustPostcode — Verified location. Greater trust.</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar" id="sidebar">
+      <a class="brand" href="#"><span class="brand-mark">T</span><span>trust<span class="brand-light">postcode</span><small>NIGERIA LOCATION TRUST</small></span></a>
+      <div class="workspace"><span class="workspace-icon">⌂</span><span><b>Workspace</b><small>Personal account</small></span><span class="chevron">⌄</span></div>
+      <p class="nav-label">WORKSPACE</p>
+      <nav>
+        <a class="nav-link active" href="#overview" data-page="overview"><span>▦</span> Overview</a>
+        <a class="nav-link" href="#verify" data-page="verify"><span>◎</span> Verify postcode</a>
+        <a class="nav-link" href="#history" data-page="history"><span>◷</span> Verification history</a>
+      </nav>
+      <p class="nav-label">DEVELOPERS</p>
+      <nav>
+        <a class="nav-link" href="#integrations" data-page="integrations"><span>⌘</span> API integrations</a>
+        <a class="nav-link" href="#docs" data-page="docs"><span>▤</span> Documentation</a>
+      </nav>
+      <div class="sidebar-bottom">
+        <div class="help-card"><span class="help-icon">✦</span><b>Need a hand?</b><p>Our integration guide will help you get started.</p><a href="#docs" data-page="docs">Explore guide <span>→</span></a></div>
+        <div class="profile"><div class="avatar">TP</div><span><b>TrustPostcode Admin</b><small>Prototype workspace</small></span><span class="dots">•••</span></div>
+      </div>
+    </aside>
+    <main class="main">
+      <header class="topbar">
+        <button class="mobile-menu" id="mobileMenu" aria-label="Open navigation">☰</button>
+        <div class="crumb">Workspace <span>/</span> <b id="crumbCurrent">Overview</b></div>
+        <div class="top-actions"><span class="env-pill"><i></i> DEMO ENVIRONMENT</span><button class="icon-button" title="Notifications">♧</button><div class="avatar small">TP</div></div>
+      </header>
+      <div class="content">
+        <section class="page active" id="page-overview">
+          <div class="welcome-row"><div><p class="eyebrow">WEDNESDAY, 04 NOVEMBER 2026</p><h1>Good afternoon<span class="blue">.</span></h1><p class="muted">Your location verification command centre.</p></div><button class="primary" data-go="verify">＋ New verification</button></div>
+          <div class="notice"><span class="notice-icon">✦</span><div><b>Welcome to TrustPostcode</b><p>Explore the prototype using demo mode. Connect your NIPOST API key securely in Supabase to run live postcode lookups.</p></div><button class="notice-close" aria-label="Dismiss">×</button></div>
+          <div class="stats-grid">
+            <article class="stat-card"><div class="stat-top"><span>Total verifications</span><span class="stat-icon">◎</span></div><strong id="totalCount">0</strong><small><span class="neutral">Prototype activity</span></small></article>
+            <article class="stat-card"><div class="stat-top"><span>Successful lookups</span><span class="stat-icon green">✓</span></div><strong id="successCount">0</strong><small>Valid postcode responses</small></article>
+            <article class="stat-card"><div class="stat-top"><span>Failed lookups</span><span class="stat-icon orange">!</span></div><strong id="failedCount">0</strong><small>Invalid or unavailable</small></article>
+            <article class="stat-card"><div class="stat-top"><span>API environment</span><span class="stat-icon purple">⌘</span></div><strong class="status-word">Demo</strong><small><span class="neutral">Live key not connected</span></small></article>
+          </div>
+          <div class="section-heading"><div><h2>Quick actions</h2><p>Start with the tools you need most.</p></div></div>
+          <div class="action-grid">
+            <button class="action-card" data-go="verify"><span class="action-icon blue-bg">◎</span><b>Verify a postcode</b><small>Resolve a Nigerian postcode and inspect its returned address.</small><span class="action-arrow">→</span></button>
+            <button class="action-card" data-go="history"><span class="action-icon violet-bg">◷</span><b>View activity</b><small>Review recent lookup attempts in this browser session.</small><span class="action-arrow">→</span></button>
+            <button class="action-card" data-go="integrations"><span class="action-icon teal-bg">⌘</span><b>Connect your API</b><small>Configure the secure NIPOST integration through Supabase.</small><span class="action-arrow">→</span></button>
+          </div>
+          <div class="section-heading recent-heading"><div><h2>Recent verifications</h2><p>Your latest postcode lookup activity.</p></div><a href="#history" data-page="history">View all →</a></div>
+          <div class="table-wrap"><table><thead><tr><th>POSTCODE</th><th>LOCATION</th><th>RESULT</th><th>MODE</th><th>TIME</th></tr></thead><tbody id="recentRows"><tr><td colspan="5" class="empty">No verifications yet. Run your first postcode lookup.</td></tr></tbody></table></div>
+          <footer>© 2026 TrustPostcode. Built for a more connected Nigeria.</footer>
+        </section>
+        <section class="page" id="page-verify">
+          <div class="page-heading"><p class="eyebrow">LOCATION INTELLIGENCE</p><h1>Verify a postcode<span class="blue">.</span></h1><p class="muted">Resolve a National Digital Alphanumeric Postcode using the official NIPOST service.</p></div>
+          <div class="verify-layout">
+            <div class="panel verify-panel"><div class="panel-title"><span class="panel-symbol">◎</span><div><h3>Postcode lookup</h3><p>Enter the full postcode to retrieve its available details.</p></div></div>
+              <form id="lookupForm">
+                <label for="postcodeInput">NIGERIAN POSTCODE</label>
+                <div class="input-with-icon"><span>⌕</span><input id="postcodeInput" maxlength="14" autocomplete="off" placeholder="e.g. EK-01-A03-FK-01" required><button type="button" id="clearCode" aria-label="Clear postcode">×</button></div>
+                <div class="field-hint">Format: AA-99-A99-AA-99 <span id="formatStatus">5 segments · 12 characters</span></div>
+                <div class="sample-row"><span>Try a sample:</span><button type="button" class="sample-code">EK-01-A03-FK-01</button></div>
+                <label for="lookupLevel">LOOKUP LEVEL</label>
+                <select id="lookupLevel"><option value="1">Level 1 — Basic address (free)</option><option value="2">Level 2 — Enhanced details</option><option value="3">Level 3 — Full details</option></select>
+                <div class="level-note">Returned fields depend on the access level granted to your NIPOST API key. Higher levels may consume credits.</div>
+                <button class="primary full" id="lookupButton" type="submit"><span>◎</span> Verify postcode</button>
+                <p class="privacy-note">♢ Requests are routed through your secured backend. Never enter your API key here.</p>
+              </form>
+            </div>
+            <div class="result-panel panel" id="resultPanel">
+              <div class="result-empty"><div class="empty-illustration"><span>◎</span><i></i><b></b></div><h3>Your result will appear here</h3><p>Enter a postcode to see the returned location details and verification status.</p><div class="result-tags"><span>✓ Address lookup</span><span>✓ Audit reference</span></div></div>
+            </div>
+          </div>
+          <footer>© 2026 TrustPostcode. Postcode data is supplied by the official NIPOST API.</footer>
+        </section>
+        <section class="page" id="page-history">
+          <div class="page-heading"><p class="eyebrow">AUDIT TRAIL</p><h1>Verification history<span class="blue">.</span></h1><p class="muted">Lookup records saved in this browser for this prototype.</p></div>
+          <div class="panel history-panel"><div class="history-toolbar"><div><h3>All activity</h3><p id="historySub">0 verification records</p></div><button class="secondary" id="exportCsv">↓ Export CSV</button></div><div class="table-wrap"><table><thead><tr><th>REFERENCE</th><th>POSTCODE</th><th>LOCATION</th><th>STATUS</th><th>MODE</th><th>DATE</th></tr></thead><tbody id="historyRows"><tr><td colspan="6" class="empty">No activity to display.</td></tr></tbody></table></div></div>
+          <footer>© 2026 TrustPostcode. Keep records responsibly and follow applicable privacy requirements.</footer>
+        </section>
+        <section class="page" id="page-integrations">
+          <div class="page-heading"><p class="eyebrow">DEVELOPER WORKSPACE</p><h1>API integrations<span class="blue">.</span></h1><p class="muted">Connect TrustPostcode to the official National Digital Alphanumeric Postcode API.</p></div>
+          <div class="integration-banner"><div><span class="api-logo">N</span></div><div class="integration-copy"><span class="connected-label">OFFICIAL DATA PROVIDER</span><h2>NIPOST Postcode API</h2><p>Search, lookup and resolve Nigeria's national postcode system through the official API gateway.</p><a href="https://docs.postcode.gov.ng/quickstart" target="_blank" rel="noreferrer">Read API documentation ↗</a></div><span class="integration-status">Not connected</span></div>
+          <div class="two-col">
+            <div class="panel"><h3>Secure connection setup</h3><p class="muted small-text">Your API key belongs in Supabase Edge Function secrets, never in this page or a public repository.</p><ol class="setup-list"><li><b>Open your NIPOST developer dashboard</b><span>Create or copy your API key from Settings → API Keys.</span><a href="https://dashboard.postcode.gov.ng/" target="_blank" rel="noreferrer">Open developer dashboard ↗</a></li><li><b>Set the backend secret</b><span>In Supabase → Edge Functions → Secrets, add:</span><code>POSTCODE_API_KEY=your_secret_key</code></li><li><b>Deploy the Edge Function</b><span>Deploy <code>trustpostcode-api</code> from the supplied project folder.</span></li><li><b>Configure this app</b><span>Set the Supabase project URL and anon/publishable key in <code>app.js</code>.</span></li></ol><div class="warning-box">Do not paste your private NIPOST key into chat, HTML, JavaScript, GitHub, or a screenshot.</div></div>
+            <div class="panel"><h3>Workspace access</h3><p class="muted small-text">Sign in to your Supabase account before making live API requests.</p><div class="auth-fields"><label for="authEmail">EMAIL ADDRESS</label><input id="authEmail" type="email" placeholder="you@company.com" autocomplete="email"><label for="authPassword">PASSWORD</label><input id="authPassword" type="password" placeholder="At least 8 characters" autocomplete="current-password"><div class="auth-actions"><button class="primary" id="signInButton" type="button">Sign in</button><button class="secondary" id="signUpButton" type="button">Create account</button><button class="secondary" id="signOutButton" type="button" hidden>Sign out</button></div><p class="auth-status" id="authStatus">Not signed in</p></div></div><div class="panel"><h3>Integration settings</h3><div class="setting-row"><span>API provider</span><b>NIPOST</b></div><div class="setting-row"><span>API base URL</span><b>api.postcode.gov.ng</b></div><div class="setting-row"><span>Authentication</span><b>X-API-Key (server-side)</b></div><div class="setting-row"><span>Lookup endpoint</span><b>/v1/lookup</b></div><div class="setting-row"><span>Autocomplete endpoint</span><b>/v1/search/autocomplete</b></div><div class="setting-row"><span>Current mode</span><b class="orange-text" id="integrationMode">Demo</b></div><button class="secondary full" data-go="docs">View deployment instructions →</button></div>
+          </div>
+          <footer>© 2026 TrustPostcode. Integration access is subject to NIPOST's API scopes and terms.</footer>
+        </section>
+        <section class="page" id="page-docs">
+          <div class="page-heading"><p class="eyebrow">BUILD WITH TRUSTPOSTCODE</p><h1>Developer documentation<span class="blue">.</span></h1><p class="muted">The essentials for running the prototype and enabling live lookups.</p></div>
+          <div class="docs-grid">
+            <article class="panel"><span class="doc-icon">⌘</span><h3>1. Configure Supabase</h3><p>Create a Supabase project, enable Email authentication and run the supplied SQL schema in the SQL Editor.</p><code>supabase-schema.sql</code></article>
+            <article class="panel"><span class="doc-icon">⚡</span><h3>2. Deploy the API function</h3><p>Set <code>POSTCODE_API_KEY</code> as a Supabase secret, then deploy the Edge Function.</p><code>supabase/functions/trustpostcode-api/index.ts</code></article>
+            <article class="panel"><span class="doc-icon">◈</span><h3>3. Configure the frontend</h3><p>Set your Supabase URL and anon key in <code>app.js</code>. The frontend invokes the function using the signed-in user's session.</p><code>SUPABASE_URL · SUPABASE_ANON_KEY</code></article>
+            <article class="panel"><span class="doc-icon">✓</span><h3>4. Test live lookup</h3><p>Sign in, switch off demo mode and run a Level 1 lookup. Higher levels require the relevant API entitlement.</p><a href="https://docs.postcode.gov.ng/quickstart" target="_blank" rel="noreferrer">Official NIPOST quickstart ↗</a></article>
+          </div>
+          <div class="panel docs-format"><h3>Postcode format</h3><p>A Nigerian postcode uses five segments: state (2 letters), LGA (2 digits), district (3 alphanumeric), area (2 letters), and building unit (2 digits).</p><div class="postcode-parts"><b>EK</b><i>-</i><b>01</b><i>-</i><b>A03</b><i>-</i><b>FK</b><i>-</i><b>01</b></div><small>Illustrative format from official documentation: EK-01-A03-FK-01.</small></div>
+          <footer>© 2026 TrustPostcode. Built for developers and institutions.</footer>
+        </section>
+      </div>
+    </main>
+  </div>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script src="app.js"></script>
+</body></html>
