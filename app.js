@@ -1,98 +1,85 @@
-/* TrustPostcode prototype. Demo mode is intentionally on until Supabase is configured. */
-const CONFIG = {
-  supabaseUrl: "",       // e.g. https://YOUR_PROJECT.supabase.co
-  supabaseAnonKey: "",   // Supabase anon/publishable key only; never put NIPOST key here
-  demoMode: true
-};
+/* NaijaLocate frontend preview. Backend integrations are intentionally not enabled yet. */
 const $ = (s, root=document) => root.querySelector(s);
 const $$ = (s, root=document) => [...root.querySelectorAll(s)];
-let historyItems = [];
-let supabaseClient = null;
-let authListenerRegistered = false;
 let toastTimer;
+let activeRequestPerson = "";
+let requestRecords = [
+  {person:"Chinedu Obi",field:"phone number",status:"pending"},
+  {person:"Zainab Musa",field:"business contact email",status:"pending"}
+];
 function toast(message){const el=$("#toast");el.textContent=message;el.classList.add("show");clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.remove("show"),3000)}
-function navigate(page){$$(".page").forEach(p=>p.classList.toggle("active",p.id===`page-${page}`));$$(".nav-link").forEach(a=>a.classList.toggle("active",a.dataset.page===page));const names={overview:"Overview",verify:"Verify postcode",history:"Verification history",integrations:"API integrations",docs:"Documentation"};$("#crumbCurrent").textContent=names[page]||"Overview";$("#sidebar").classList.remove("open");location.hash=page}
-function loadHistory(){try{historyItems=JSON.parse(sessionStorage.getItem("tp_history")||"[]")}catch{historyItems=[]}renderHistory()}
-function saveHistory(item){historyItems.unshift(item);historyItems=historyItems.slice(0,100);sessionStorage.setItem("tp_history",JSON.stringify(historyItems));renderHistory()}
-function esc(s){return String(s??"—").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
-function renderHistory(){
-  const ok=historyItems.filter(x=>x.valid).length, fail=historyItems.length-ok;
-  $("#totalCount").textContent=historyItems.length;$("#successCount").textContent=ok;$("#failedCount").textContent=fail;
-  const row=(x,full=false)=>`<tr>${full?`<td>${esc(x.reference)}</td>`:""}<td>${esc(x.postcode)}</td><td>${esc(x.location||"Not resolved")}</td><td><span class="status-badge ${x.valid?"":"invalid"}">${x.valid?"Valid":"Not verified"}</span></td><td>${esc(x.mode)}</td><td>${esc(x.time)}</td></tr>`;
-  $("#recentRows").innerHTML=historyItems.length?historyItems.slice(0,5).map(x=>row(x)).join(""):`<tr><td colspan="5" class="empty">No verifications yet. Run your first postcode lookup.</td></tr>`;
-  $("#historyRows").innerHTML=historyItems.length?historyItems.map(x=>row(x,true)).join(""):`<tr><td colspan="6" class="empty">No activity to display.</td></tr>`;
-  $("#historySub").textContent=`${historyItems.length} verification record${historyItems.length===1?"":"s"}`;
-}
-function formatCode(value){return value.toUpperCase().replace(/[^A-Z0-9]/g,"").replace(/^(.{2})(.{0,2})(.{0,3})(.{0,2})(.{0,2}).*$/,(m,a,b,c,d,e)=>[a,b,c,d,e].filter(Boolean).join("-"))}
-function validFormat(code){return /^[A-Z]{2}-\d{2}-[A-Z0-9]{3}-[A-Z]{2}-\d{2}$/.test(code)}
-function demoLookup(code){
-  if(code==="EK-01-A03-FK-01")return {data:{postcode:code,valid:true,administrative_address:{state_name:"EKITI",lga_name:"ADO EKITI",locality_name:"ADO EKITI",zone:"SOUTH WEST"},recent_house_address:{recent:"NTA ROAD, BACK OF FABIAN HOTEL, ADO EKITI"},building_use_status:"residential"},demo:true};
-  return {data:{postcode:code,valid:false,message:"This is a demonstration response. Connect your NIPOST API key to verify real postcodes."},demo:true};
-}
-async function callLookup(code,level){
-  if(CONFIG.demoMode)return demoLookup(code);
-  if(!supabaseClient)throw new Error("Supabase is not configured. Add the project URL and anon key in app.js.");
-  const {data:{session},error:sessionError}=await supabaseClient.auth.getSession();
-  if(sessionError||!session)throw new Error("Please sign in to run live postcode verification.");
-  const {data,error}=await supabaseClient.functions.invoke("trustpostcode-api",{body:{action:"lookup",code,level:Number(level)}});
-  if(error)throw new Error(error.message||"The secure postcode service could not be reached.");
-  return data;
-}
-function renderResult(payload,code,mode,reference){
-  const d=payload?.data||payload;const valid=Boolean(d?.valid);const a=d?.administrative_address||{};const house=d?.recent_house_address||{};
-  const loc=[a.locality_name,a.lga_name,a.state_name].filter(Boolean).join(", ")||"Location details not supplied";
-  $("#resultPanel").innerHTML=`<div class="result-data"><div class="result-head"><div><h3>Lookup result</h3><p>${payload.demo?"Demonstration data":"Official NIPOST API response"}</p></div><span class="status-badge ${valid?"":"invalid"}">${valid?"✓ Valid postcode":"Not verified"}</span></div><div class="result-code"><small>POSTCODE REFERENCE</small><strong>${esc(d.postcode||code)}</strong></div><div class="detail-grid"><div class="detail-item"><small>STATE</small><b>${esc(a.state_name)}</b></div><div class="detail-item"><small>LOCAL GOVERNMENT</small><b>${esc(a.lga_name)}</b></div><div class="detail-item"><small>LOCALITY</small><b>${esc(a.locality_name)}</b></div><div class="detail-item"><small>GEOGRAPHIC ZONE</small><b>${esc(a.zone)}</b></div><div class="detail-item"><small>RECENT HOUSE ADDRESS</small><b>${esc(house.recent||"Not available at this level")}</b></div><div class="detail-item"><small>BUILDING USE</small><b>${esc(d.building_use_status||"Not supplied")}</b></div></div>${d.message?`<p class="level-note">${esc(d.message)}</p>`:""}<div class="receipt-row"><span>REFERENCE: <b>${esc(reference)}</b></span><button class="secondary" id="copyReceipt">Copy result</button></div></div>`;
-  $("#copyReceipt").addEventListener("click",()=>{navigator.clipboard?.writeText(JSON.stringify(payload,null,2)).then(()=>toast("Lookup response copied")).catch(()=>toast("Copy unavailable in this browser"))});
-}
-$("#lookupForm").addEventListener("submit",async e=>{
-  e.preventDefault();const input=$("#postcodeInput"),code=formatCode(input.value.trim());input.value=code;
-  if(!validFormat(code)){toast("Enter a postcode in the format AA-99-A99-AA-99");$("#formatStatus").textContent="Check the postcode format";return}
-  const btn=$("#lookupButton");btn.disabled=true;btn.textContent="Checking postcode…";$("#resultPanel").innerHTML='<div class="result-empty"><div class="empty-illustration"><span>◌</span></div><h3>Looking up postcode</h3><p>Contacting the configured verification service.</p></div>';
-  const ref="TP-"+Date.now().toString(36).toUpperCase();let payload,mode=CONFIG.demoMode?"Demo":"Live";
-  try{payload=await callLookup(code,$("#lookupLevel").value);const d=payload?.data||payload;const a=d?.administrative_address||{};const item={reference:ref,postcode:code,location:[a.locality_name,a.lga_name,a.state_name].filter(Boolean).join(", "),valid:Boolean(d?.valid),mode,time:new Date().toLocaleString()};saveHistory(item);renderResult(payload,code,mode,ref);toast(CONFIG.demoMode?"Demo lookup complete":"Live NIPOST lookup complete")}
-  catch(err){const item={reference:ref,postcode:code,location:"Service error",valid:false,mode,time:new Date().toLocaleString()};saveHistory(item);$("#resultPanel").innerHTML=`<div class="result-empty"><div class="empty-illustration"><span>!</span></div><h3>Lookup could not complete</h3><p>${esc(err.message)}</p></div>`;toast(err.message)}
-  finally{btn.disabled=false;btn.innerHTML="<span>◎</span> Verify postcode"}
-});
-$("#postcodeInput").addEventListener("input",e=>{const raw=e.target.value.toUpperCase().replace(/[^A-Z0-9]/g,"");$("#formatStatus").textContent=raw.length>=11?"Check segment pattern":"5 segments · 12 characters"});
-$("#clearCode").addEventListener("click",()=>{$("#postcodeInput").value="";$("#formatStatus").textContent="5 segments · 12 characters";$("#postcodeInput").focus()});
-$(".sample-code").addEventListener("click",()=>{$("#postcodeInput").value="EK-01-A03-FK-01";$("#formatStatus").textContent="Sample format loaded"});
-$("#exportCsv").addEventListener("click",()=>{if(!historyItems.length){toast("No records to export");return}const cols=["reference","postcode","location","valid","mode","time"];const csv=[cols.join(","),...historyItems.map(x=>cols.map(k=>`"${String(x[k]??"").replace(/"/g,'""')}"`).join(","))].join("\n");const url=URL.createObjectURL(new Blob([csv],{type:"text/csv"}));const a=document.createElement("a");a.href=url;a.download="trustpostcode-history.csv";a.click();URL.revokeObjectURL(url)});
-$$("[data-page]").forEach(a=>a.addEventListener("click",e=>{e.preventDefault();navigate(a.dataset.page)}));
-$$("[data-go]").forEach(b=>b.addEventListener("click",()=>navigate(b.dataset.go)));
+const pageNames={overview:"Overview",discover:"Find people",postcode:"Postcode lookup",places:"Places & locations",profile:"My profile",requests:"Access requests",notifications:"Notifications",location:"Live location",assistant:"AI location assistant",settings:"Privacy & settings",integrations:"Integrations"};
+function navigate(page){if(!pageNames[page])return;$(".page.active")?.classList.remove("active");$("#page-"+page)?.classList.add("active");$$(".nav-link").forEach(a=>a.classList.toggle("active",a.dataset.page===page));$("#crumbCurrent").textContent=pageNames[page];$("#sidebar").classList.remove("open");history.replaceState(null,"",`#${page}`);window.scrollTo({top:0,behavior:"smooth"})}
+$$('[data-page]').forEach(a=>a.addEventListener('click',e=>{e.preventDefault();navigate(a.dataset.page)}));
+$$('[data-go]').forEach(b=>b.addEventListener('click',()=>navigate(b.dataset.go)));
 $("#mobileMenu").addEventListener("click",()=>$("#sidebar").classList.toggle("open"));
-$(".notice-close").addEventListener("click",()=>$(".notice").remove());
-if(location.hash&&$("#page-"+location.hash.slice(1)))navigate(location.hash.slice(1));
-loadHistory();
-(async function initSupabase(){
- if(!CONFIG.supabaseUrl||!CONFIG.supabaseAnonKey)return;
- try{const lib=document.createElement("script");lib.src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2";lib.onload=()=>{supabaseClient=window.supabase.createClient(CONFIG.supabaseUrl,CONFIG.supabaseAnonKey);if(!CONFIG.demoMode){$(".env-pill").innerHTML="<i></i> LIVE API CONFIGURED";$("#integrationMode").textContent="Live configured";$(".integration-status").textContent="Backend configured";$(".integration-status").style.color="#16865f";$(".integration-status").style.background="#e8f8f1";$(".integration-status").style.borderColor="#d3f0e3";}refreshAuthState();};document.head.appendChild(lib)}catch(e){console.error(e)}
-})();
+$(".notice-close")?.addEventListener("click",()=>$(".notice")?.remove());
+if(location.hash && pageNames[location.hash.slice(1)])navigate(location.hash.slice(1));
 
-async function refreshAuthState(){
- if(!supabaseClient)return;
- const {data:{session}}=await supabaseClient.auth.getSession();
- $("#authStatus").textContent=session?`Signed in as ${session.user.email}`:"Not signed in";
- $("#authStatus").classList.toggle("good",!!session);
- $("#signInButton").hidden=!!session;$("#signUpButton").hidden=!!session;$("#signOutButton").hidden=!session;
- if(!authListenerRegistered){supabaseClient.auth.onAuthStateChange(()=>{const current=supabaseClient.auth.getSession();current.then(({data:{session}})=>{if(!session){$("#authStatus").textContent="Not signed in";$("#authStatus").classList.remove("good");$("#signInButton").hidden=false;$("#signUpButton").hidden=false;$("#signOutButton").hidden=true;}else{$("#authStatus").textContent=`Signed in as ${session.user.email}`;$("#authStatus").classList.add("good");$("#signInButton").hidden=true;$("#signUpButton").hidden=true;$("#signOutButton").hidden=false;}})});authListenerRegistered=true;}
-}
-$("#signInButton").addEventListener("click",async()=>{
- if(!supabaseClient){toast("Configure Supabase URL and anon key first");return}
- const email=$("#authEmail").value.trim(),password=$("#authPassword").value;
- if(!email||!password){toast("Enter your email and password");return}
- const {error}=await supabaseClient.auth.signInWithPassword({email,password});
- if(error){toast(error.message);return} await refreshAuthState();toast("Signed in successfully");
-});
-$("#signUpButton").addEventListener("click",async()=>{
- if(!supabaseClient){toast("Configure Supabase URL and anon key first");return}
- const email=$("#authEmail").value.trim(),password=$("#authPassword").value;
- if(!email||password.length<8){toast("Enter an email and password of at least 8 characters");return}
- const {data,error}=await supabaseClient.auth.signUp({email,password});
- if(error){toast(error.message);return}
- toast(data.session?"Account created and signed in":"Account created. Check your email to confirm, then sign in.");
- await refreshAuthState();
-});
-$("#signOutButton").addEventListener("click",async()=>{
- if(!supabaseClient)return;const {error}=await supabaseClient.auth.signOut();
- if(error){toast(error.message);return}await refreshAuthState();toast("Signed out");
-});
+// People discovery preview
+function filterPeople(){const q=$("#peopleSearch").value.trim().toLowerCase();const state=$("#peopleState").value.toLowerCase();const profession=$("#peopleProfession").value.toLowerCase();let visible=0;$$('.person-card').forEach(card=>{const matchQ=!q||card.dataset.search.includes(q);const matchState=!state||card.dataset.search.includes(state);const matchProfession=!profession||card.dataset.search.includes(profession);const show=matchQ&&matchState&&matchProfession;card.hidden=!show;if(show)visible++});$("#peopleResultCount").textContent=`${visible} sample profile${visible===1?"":"s"} match your search.`;if(!visible)toast("No sample profiles match those filters")}
+$("#peopleSearchButton").addEventListener("click",filterPeople);$("#peopleSearch").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();filterPeople()}});$("#peopleState").addEventListener("change",filterPeople);$("#peopleProfession").addEventListener("change",filterPeople);
+
+// Access request modal — preview only
+function openAccessModal(person){activeRequestPerson=person;$("#modalTitle").textContent=`Request access from ${person}`;$("#modalDescription").textContent="Ask this person for permission to view a private contact field. Nothing is shared until they approve.";$("#accessModal").classList.add("show");$("#accessModal").setAttribute("aria-hidden","false");$("#requestReason").focus()}
+function closeAccessModal(){$("#accessModal").classList.remove("show");$("#accessModal").setAttribute("aria-hidden","true")}
+$$('.request-person').forEach(b=>b.addEventListener('click',()=>openAccessModal(b.dataset.person)));
+$("#modalClose").addEventListener("click",closeAccessModal);$("#accessModal").addEventListener("click",e=>{if(e.target.id==="accessModal")closeAccessModal()});document.addEventListener("keydown",e=>{if(e.key==="Escape")closeAccessModal()});
+$("#accessRequestForm").addEventListener("submit",e=>{e.preventDefault();toast(`Request preview prepared for ${activeRequestPerson}. Backend is not connected.`);closeAccessModal();e.target.reset()});
+
+// Access request decision workflow in local preview
+function renderRequestCounts(){const pending=requestRecords.filter(r=>r.status==="pending").length;$("#requestNavCount").textContent=pending;$("#overviewPending").textContent=pending;$("#pendingTabCount").textContent=pending}
+function setRequestFilter(status){$$('.tab').forEach(t=>t.classList.toggle('active',t.dataset.requestFilter===status));$$('.request-card').forEach(c=>{c.hidden=c.dataset.status!==status})}
+$$('[data-request-filter]').forEach(t=>t.addEventListener('click',()=>setRequestFilter(t.dataset.requestFilter)));
+function updateRequestCard(card,status){card.dataset.status=status;const badge=card.querySelector('.request-status');badge.textContent=status[0].toUpperCase()+status.slice(1);badge.className=`request-status ${status}`;card.querySelector('.request-actions')?.remove();const record=requestRecords.find(r=>r.person===card.querySelector('.request-title b').textContent);if(record)record.status=status;renderRequestCounts();toast(`Request ${status}`);setRequestFilter(status)}
+$$('.approve-request').forEach(b=>b.addEventListener('click',()=>updateRequestCard(b.closest('.request-card'),'approved')));$$('.decline-request').forEach(b=>b.addEventListener('click',()=>updateRequestCard(b.closest('.request-card'),'declined')));
+renderRequestCounts();
+
+// Profile preview and photo selection. Data remains in this browser tab only.
+$("#photoUpload").addEventListener("change",e=>{const file=e.target.files?.[0];if(!file)return;if(!file.type.startsWith('image/')){toast('Please choose an image file');return}const reader=new FileReader();reader.onload=()=>{$("#profilePhoto").style.backgroundImage=`url('${reader.result}')`;$ ("#profilePhoto").textContent=""};reader.readAsDataURL(file)});
+$("#profileForm").addEventListener("submit",e=>{e.preventDefault();const name=$("#fullName").value.trim()||"NaijaLocate Member";$("#sidebarName").textContent=name;const initials=name.split(/\s+/).slice(0,2).map(s=>s[0]).join("").toUpperCase();$("#sidebarAvatar").textContent=initials;$("#topAvatar").textContent=initials;if($("#profilePhoto").style.backgroundImage==="")$("#profilePhoto").textContent=initials;toast('Profile preview saved in this page. It has not been uploaded.')});
+$("#discoverableToggle").addEventListener("change",e=>{$("#settingDiscover").checked=e.target.checked;toast(e.target.checked?'Profile discovery preview enabled':'Profile discovery preview disabled')});$("#settingDiscover").addEventListener("change",e=>{$("#discoverableToggle").checked=e.target.checked;toast('Discovery preference changed in preview')});
+
+// Notifications preview
+function updateUnread(){const n=$$('.notification-item.unread').length;$("#notificationNavCount").textContent=n;$("#overviewUnread").textContent=n}
+$("#markAllRead").addEventListener("click",()=>{$$('.notification-item').forEach(n=>{n.classList.remove('unread');n.querySelector('.unread-dot')?.remove()});updateUnread();toast('All preview notifications marked as read')});updateUnread();
+
+// Geolocation is requested only after an explicit click. Coordinates stay in this page.
+let currentCoordinates=null;let shareTimer=null;
+$("#locateMe").addEventListener("click",()=>{const output=$("#locationReadout");if(!navigator.geolocation){output.textContent='Geolocation is not supported by this browser.';return}output.textContent='Requesting device location permission…';navigator.geolocation.getCurrentPosition(pos=>{currentCoordinates={latitude:pos.coords.latitude,longitude:pos.coords.longitude,accuracy:pos.coords.accuracy};output.textContent=`Location available on this device. Latitude: ${currentCoordinates.latitude.toFixed(5)}, longitude: ${currentCoordinates.longitude.toFixed(5)} (accuracy ±${Math.round(currentCoordinates.accuracy)}m). Not shared.`;$("#startShare").disabled=false;toast('Location obtained locally')},err=>{output.textContent=err.code===1?'Location permission was denied. You can enable it in your browser settings.':'Could not obtain your location. Try again when location services are available.';toast('Location was not accessed')},{enableHighAccuracy:true,timeout:12000,maximumAge:0})});
+$("#startShare").addEventListener("click",()=>{if(!currentCoordinates)return;const mins=Number($("#shareDuration").value);$("#locationReadout").textContent=`Sharing preview active for ${mins} minutes. No coordinates are being transmitted.`;$("#startShare").hidden=true;$("#stopShare").hidden=false;shareTimer=setTimeout(stopSharePreview,mins*60000);toast('Local sharing preview started')});
+function stopSharePreview(){clearTimeout(shareTimer);$("#startShare").hidden=false;$("#stopShare").hidden=true;$("#locationReadout").textContent=currentCoordinates?'Location available on this device. Not shared.':'Location sharing is off.';toast('Sharing preview stopped')}
+$("#stopShare").addEventListener("click",stopSharePreview);
+
+// Postcode format preview — no API calls are made.
+function formatCode(value){const raw=value.toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,11);const parts=[raw.slice(0,2),raw.slice(2,4),raw.slice(4,7),raw.slice(7,9),raw.slice(9,11)].filter(Boolean);return parts.join('-')}
+function validFormat(code){return /^[A-Z]{2}-\d{2}-[A-Z0-9]{3}-[A-Z]{2}-\d{2}$/.test(code)}
+function demoLookup(code){if(code==='EK-01-A03-FK-01')return{data:{postcode:code,valid:true,administrative_address:{state_name:'EKITI',lga_name:'ADO EKITI',locality_name:'ADO EKITI',zone:'SOUTH WEST'},recent_house_address:{recent:'NTA ROAD, BACK OF FABIAN HOTEL, ADO EKITI'},building_use_status:'residential'},demo:true};return{data:{postcode:code,valid:false,message:'This is an illustrative preview. A live NIPOST API connection is not configured.'},demo:true}}
+function renderResult(payload,code){const d=payload.data||payload,a=d.administrative_address||{},house=d.recent_house_address||{};const valid=Boolean(d.valid);$("#resultPanel").innerHTML=`<div class="result-data"><div class="result-head"><div><h3>Sample lookup result</h3><p>Illustrative response · Not a live verification</p></div><span class="status-badge ${valid?'':'invalid'}">${valid?'Sample valid':'Not verified'}</span></div><div class="result-code"><small>POSTCODE REFERENCE</small><strong>${escapeHtml(d.postcode||code)}</strong></div><div class="detail-grid"><div class="detail-item"><small>STATE</small><b>${escapeHtml(a.state_name||'Not supplied')}</b></div><div class="detail-item"><small>LOCAL GOVERNMENT</small><b>${escapeHtml(a.lga_name||'Not supplied')}</b></div><div class="detail-item"><small>LOCALITY</small><b>${escapeHtml(a.locality_name||'Not supplied')}</b></div><div class="detail-item"><small>GEOGRAPHIC ZONE</small><b>${escapeHtml(a.zone||'Not supplied')}</b></div><div class="detail-item"><small>RECENT HOUSE ADDRESS</small><b>${escapeHtml(house.recent||'Not available')}</b></div><div class="detail-item"><small>BUILDING USE</small><b>${escapeHtml(d.building_use_status||'Not supplied')}</b></div></div>${d.message?`<p class="level-note">${escapeHtml(d.message)}</p>`:''}<div class="receipt-row"><span>SOURCE: <b>DEMO SAMPLE</b></span><button class="secondary" id="copyReceipt">Copy result</button></div></div>`;$("#copyReceipt").addEventListener('click',()=>navigator.clipboard?.writeText(JSON.stringify(payload,null,2)).then(()=>toast('Sample result copied')).catch(()=>toast('Copy unavailable')))}
+function escapeHtml(s){return String(s??'—').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+$("#lookupForm").addEventListener('submit',e=>{e.preventDefault();const input=$("#postcodeInput"),code=formatCode(input.value);input.value=code;if(!validFormat(code)){toast('Enter a postcode in the format AA-99-A99-AA-99');$("#formatStatus").textContent='Check the postcode format';return}renderResult(demoLookup(code),code);toast('Sample postcode preview loaded')});
+$("#postcodeInput").addEventListener('input',e=>{e.target.value=formatCode(e.target.value);$("#formatStatus").textContent=e.target.value.length===15?'Format length looks right':'5 segments · 15 visible characters'});$("#clearCode").addEventListener('click',()=>{$("#postcodeInput").value='';$("#formatStatus").textContent='5 segments · 15 visible characters';$("#postcodeInput").focus()});$(".sample-code").addEventListener('click',()=>{$("#postcodeInput").value='EK-01-A03-FK-01';$("#formatStatus").textContent='Sample format loaded'});
+
+// AI assistant preview — responses are clearly labelled as examples, not live AI.
+const sampleAnswers=[[/postcode|code/i,'A Nigerian digital alphanumeric postcode is organised into five segments. For example, EK-01-A03-FK-01 is an illustrative format. For authoritative results, use the official NIPOST postcode service once the API integration is approved.'],[/protect|private|address|safe/i,'Keep your residential address, phone number, email and exact coordinates private by default. Share a specific field only after reviewing a request, and revoke access when it is no longer needed.'],[/enugu|lagos|abuja|places|find/i,'I can help structure a place search by state, city or landmark. In the live product, map-provider results will be labelled as map data and will not be presented as official postcode verification.'],[/location|share/i,'Live location should be off by default. Start a time-limited share only for a chosen recipient, keep a visible active indicator, and stop sharing whenever you want.']];
+function addChat(text,who){const node=document.createElement('div');node.className=`chat-bubble ${who==='user'?'user-bubble':'assistant-bubble'}`;node.textContent=text;if(who!=='user'){const small=document.createElement('small');small.textContent='Preview response · Not connected to an AI service';node.appendChild(small)}$("#chatMessages").appendChild(node);$("#chatMessages").scrollTop=$("#chatMessages").scrollHeight}
+function answerAssistant(q){const match=sampleAnswers.find(([re])=>re.test(q));return match?match[1]:'This assistant is currently in preview mode. When the AI service is connected, it will help with Nigerian location questions and clearly identify whether information comes from NIPOST, a map provider or an AI suggestion.'}
+$("#assistantForm").addEventListener('submit',e=>{e.preventDefault();const input=$("#assistantInput"),q=input.value.trim();if(!q)return;addChat(q,'user');input.value='';setTimeout(()=>addChat(answerAssistant(q),'assistant'),250)});$$('.prompt-chip').forEach(b=>b.addEventListener('click',()=>{$("#assistantInput").value=b.textContent;$("#assistantForm").requestSubmit()}));
+
+// Settings preview only
+$("#allowRequests").addEventListener('change',e=>toast(e.target.checked?'Contact requests enabled in preview':'Contact requests disabled in preview'));
+$("#pushToggle").addEventListener('change',e=>{if(e.target.checked){e.target.checked=false;toast('Push notifications will be enabled after secure push setup and device permission.')}});
+$("#downloadData").addEventListener('click',()=>{const data={note:'NaijaLocate frontend preview only. No server account data is stored.',profile:{name:$("#fullName").value,profession:$("#profession").value,locality:$("#profileLocality").value},requests:requestRecords};const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='naijalocate-preview-data.json';a.click();URL.revokeObjectURL(url);toast('Preview export downloaded')});
+$("#deleteAccountInfo").addEventListener('click',()=>toast('Account deletion will be implemented with the secure backend and confirmation workflow.'));
+
+// No backend calls or external API keys are used in this frontend build.
+
+// Authentication screens — visual preview only; no credentials are sent or stored.
+let authMode='signup';
+function showAuth(mode='signup') { authMode=mode; $("#authModal").classList.add('show'); $("#authModal").setAttribute('aria-hidden','false'); updateAuthMode(); }
+function closeAuth() { $("#authModal").classList.remove('show'); $("#authModal").setAttribute('aria-hidden','true'); }
+function updateAuthMode() { $$('.auth-tabs [data-auth-mode]').forEach(b=>b.classList.toggle('active',b.dataset.authMode===authMode)); $$('.auth-signup-only').forEach(el=>el.hidden=authMode==='signin'); $("#authTitle").textContent=authMode==='signup'?'Create your account':'Welcome back'; $("#authSubmit").textContent=authMode==='signup'?'Create preview account':'Sign-in preview'; $("#authPassword").autocomplete=authMode==='signup'?'new-password':'current-password'; }
+$("#openAuth").addEventListener('click',()=>showAuth('signup'));$("#authClose").addEventListener('click',closeAuth);$("#authModal").addEventListener('click',e=>{if(e.target.id==='authModal')closeAuth()});$$('[data-auth-mode]').forEach(b=>b.addEventListener('click',()=>{authMode=b.dataset.authMode;updateAuthMode()}));
+$("#authForm").addEventListener('submit',e=>{e.preventDefault();if(authMode==='signup'&&!$("#authName").value.trim()){toast('Enter your name to continue');return}if($("#authPassword").value.length<8){toast('Password must be at least 8 characters');return}toast(authMode==='signup'?'Account form preview complete. Supabase Auth is not connected.':'Sign-in preview complete. Supabase Auth is not connected.');closeAuth();e.target.reset()});
+$("#authGender").addEventListener('change',e=>{$("#authGenderCustom").hidden=e.target.value!=='Self-describe'});
+$("#profileGender").addEventListener('change',e=>{$("#profileGenderCustom").hidden=e.target.value!=='Self-describe'});

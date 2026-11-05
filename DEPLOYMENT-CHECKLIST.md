@@ -1,29 +1,20 @@
-# TrustPostcode — implementation checklist
+# NaijaLocate frontend preview checklist
 
-## Completed in this prototype
-- [x] Responsive dashboard shell and navigation
-- [x] Postcode input validation
-- [x] Demonstration lookup for documentation example EK-01-A03-FK-01
-- [x] Verification result panel and reference ID
-- [x] Browser-session history and CSV export
-- [x] Secure NIPOST Edge Function proxy source
-- [x] Initial Supabase verification table and RLS policies
+- [ ] Upload the frontend files to the intended GitHub repository.
+- [ ] Confirm `index.html`, `styles.css` and `app.js` are in the deployed root.
+- [ ] Deploy as a static site on the selected host.
+- [ ] Test navigation on desktop and mobile.
+- [ ] Test account modal, optional gender field, profile preview, discovery filters, access request decisions, notifications, postcode sample and assistant preview.
+- [ ] Confirm the browser location permission is requested only after the user presses the location button.
+- [ ] Confirm no secret keys have been added to frontend files.
+- [ ] Do not advertise demo postcode responses as live NIPOST verification.
 
-## Required before live testing
-- [ ] Create Supabase project
-- [ ] Enable Supabase Auth (email/password)
-- [ ] Run `supabase-schema.sql`
-- [ ] Add `POSTCODE_API_KEY` in Edge Function secrets
-- [ ] Deploy `trustpostcode-api`
-- [ ] Add Supabase URL and anon/publishable key to `app.js`
-- [ ] Set `demoMode: false`
-- [ ] Sign in and test Level 1 lookup with an API-approved postcode
+# Before backend launch
 
-## Required before public production
-- [ ] Replace wildcard CORS with the production domain
-- [ ] Add rate limiting and abuse protection
-- [ ] Persist verification records through authenticated database inserts
-- [ ] Add consent, privacy notice, retention and deletion workflows
-- [ ] Add organisation roles and tenant isolation
-- [ ] Add API usage, cost and entitlement monitoring
-- [ ] Security review and end-to-end testing
+- [ ] Review the existing Supabase project and current schema; do not run legacy SQL blindly.
+- [ ] Apply the approved NaijaLocate database migration in small verified steps.
+- [ ] Configure Supabase Auth, profile tables, private storage and RLS.
+- [ ] Deploy and test each Edge Function before enabling its frontend control.
+- [ ] Configure NIPOST secrets server-side only after official API registration.
+- [ ] Configure Web Push, map and AI providers with server-side secrets and privacy controls.
+- [ ] Complete security testing, consent flows, data retention and privacy notices.

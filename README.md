@@ -1,43 +1,56 @@
-# TrustPostcode
+# NaijaLocate — Frontend Foundation
 
-A mobile-first prototype for Nigerian National Digital Alphanumeric Postcode lookup and address verification.
+This is the first frontend expansion of the uploaded TrustPostcode prototype. The original navy/blue workspace visual direction and static HTML/CSS/JavaScript stack are retained, while the product interface is expanded into NaijaLocate.
 
-## Current capabilities
-- Dashboard, verification workflow, activity history and CSV export
-- Postcode format validation (AA-99-A99-AA-99)
-- Clearly labelled demo mode using the official documentation's illustrative sample response
-- Secure Supabase Edge Function proxy for live NIPOST API calls
-- RLS-protected verification-history schema
+## Included screens
 
-## Project files
-- `index.html` — application shell and pages
-- `styles.css` — responsive interface
-- `app.js` — navigation, demo workflow and frontend integration
-- `supabase-schema.sql` — initial database schema and RLS
-- `supabase/functions/trustpostcode-api/index.ts` — authenticated server-side NIPOST proxy
-- `.env.example` — configuration checklist
+- Overview dashboard
+- Find people / public profile discovery
+- Postcode lookup preview
+- Places and map placeholder
+- Personal profile editor with photo preview and optional gender
+- Profile field visibility controls
+- Sign-in and account creation modal (gender is optional)
+- Access request inbox with approve / decline preview interactions
+- Notifications centre
+- Live location permission and timed sharing preview
+- AI location assistant preview
+- Privacy and settings
+- Integrations workspace
 
 ## Run locally
-Open `index.html` in a local static server (for example VS Code Live Server). Demo mode works without credentials.
 
-## Enable live NIPOST lookups
-1. Create a Supabase project.
-2. Run `supabase-schema.sql` in the Supabase SQL Editor.
-3. In Supabase Edge Function secrets, set `POSTCODE_API_KEY` to the secret from your NIPOST developer dashboard.
-4. Deploy the function:
-   ```bash
-   supabase functions deploy trustpostcode-api
-   ```
-5. Configure the frontend in `app.js`:
-   - `supabaseUrl`: your project URL
-   - `supabaseAnonKey`: your Supabase anon/publishable key
-   - `demoMode`: `false`
-6. Enable Supabase Auth and sign in before invoking the live function. The function validates the user's JWT with Supabase Auth.
+Open `index.html` using a local static server such as VS Code Live Server. No build step or package installation is required.
 
-## Security notes
-- Never put `POSTCODE_API_KEY` in frontend JavaScript, HTML, GitHub, or a public environment variable.
-- The Edge Function uses the caller's JWT and the anon key to validate identity. It does not use or accept a service-role key.
-- Configure restrictive CORS origins before production.
-- Add server-side rate limiting, abuse monitoring, consent and data-retention rules before public launch.
-- The prototype currently stores history in browser session storage. The SQL table is supplied for the next persistence integration; the current frontend does not yet write to it.
-- Do not represent a successful postcode lookup as proof of a person's identity, property ownership or occupancy.
+## Important preview limitations
+
+This is a frontend-only preview. It does not create accounts, transmit access requests, upload profile photos, persist profile changes, send push notifications, store location coordinates, call NIPOST, call a map provider, or connect to an AI model. Demo interactions are labelled and run locally in the browser.
+
+The browser geolocation control requests permission only after the user presses **Use my current location**. Coordinates are displayed locally and are not transmitted. The timed sharing control is a local UI simulation only.
+
+## Backend integration plan
+
+Backend integration will be performed incrementally after the frontend review:
+
+1. Review existing Supabase project and schema without changing live data.
+2. Configure Supabase Auth and account creation.
+3. Add profile and private profile storage with RLS.
+4. Add profile field visibility and public discovery RPC.
+5. Add access requests, approvals, grants and revocation.
+6. Add in-app notifications and Web Push delivery.
+7. Add official NIPOST API integration through a secured Edge Function.
+8. Add map provider and explicit, expiring live-location sharing.
+9. Add AI assistant through a server-side function with source labels and usage controls.
+
+## Security principles
+
+- Never place service-role keys, NIPOST keys, map secrets or AI provider keys in browser code.
+- Keep phone, email, residential address and exact coordinates private by default.
+- Enforce visibility and approved access on the server, not only in the UI.
+- Require explicit consent for location sharing; apply expiry and revocation.
+- Do not present a postcode lookup as proof of identity, ownership or occupancy.
+- NaijaLocate is an independent product and must not imply NIPOST affiliation or endorsement.
+
+## Existing SQL file
+
+`supabase-schema.sql` is retained from the original TrustPostcode prototype for reference. It is not the NaijaLocate V2 migration and should not be run as part of this frontend-only step. We will inspect the live Supabase project and apply backend changes one verified step at a time.
